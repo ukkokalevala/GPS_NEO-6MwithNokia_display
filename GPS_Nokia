@@ -1,0 +1,68 @@
+#include <Adafruit_GFX.h>
+#include <Adafruit_PCD8544.h>
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
+
+// Nokia 5110 pin definitions
+#define CLK D1
+#define DIN D2
+#define DC  D5
+#define CE  D6
+#define RST D7
+
+// Initialize the Nokia 5110 display
+Adafruit_PCD8544 display = Adafruit_PCD8544(CLK, DIN, DC, CE, RST);
+
+// Set up GPS module
+static const int RXPin = D3, TXPin = D4;  // GPS RX and TX pins
+static const uint32_t GPSBaud = 9600;     // GPS default baud rate
+SoftwareSerial ss(RXPin, TXPin);
+
+// Create TinyGPS++ object
+TinyGPSPlus gps;
+
+void setup() {
+  // Initialize serial communication
+  Serial.begin(115200);
+  ss.begin(GPSBaud);
+
+  // Initialize the Nokia display
+  display.begin();
+  display.setContrast(50);  // Adjust for readability
+  display.setRotation(2);   // Rotate display 180 degrees
+  display.clearDisplay();
+  display.display();
+  
+  display.setCursor(0, 0);
+  display.println("GPS Init...");
+  display.display();
+}
+
+void loop() {
+  // Read data from the GPS module
+  while (ss.available() > 0) {
+    gps.encode(ss.read());  // Feed the data into the GPS parser
+
+    if (gps.location.isUpdated()) {  // Check if the GPS data is updated
+      displayGPSInfo();  // Display updated GPS info
+    }
+  }
+}
+
+void displayGPSInfo() {
+  // Clear the display
+  display.clearDisplay();
+
+  // Display latitude and longitude on the Nokia 5110
+  display.setCursor(0, 0);  // First row
+  display.setTextSize(1);   // Normal text size
+  display.print("Lat: ");
+  display.println(gps.location.lat(), 6);  // Latitude with 6 decimal places
+
+  display.setCursor(0, 10);  // Move to the second row (y=10)
+  display.print("Lon: ");
+  display.println(gps.location.lng(), 6);  // Longitude with 6 decimal places
+
+  // Push data to display
+  display.display();
+}
